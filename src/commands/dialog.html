@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Form</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript" src="../app.js"></script>
+    <script src="../configurations/config.js"></script>
+    <style>
+        /* Basic styling for the form */
+        form {
+            margin: 20px;
+        }
+
+        .date-input-expire {
+            display: block;
+            margin-top: 10px;
+        }
+        body{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            background-image: url("../assets/bg.jpg");
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-blend-mode: saturation;
+        }
+        button[disabled] {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+        <h1>Attach Using AGORA</h1>
+        <form id="auth-upload-form" enctype="multipart/form-data">
+            <br>
+            <label for="fileInput">Select files</label>
+            <input type="file" id="fileInput" name="file" multiple="true" required>
+            <br>
+            
+            <!-- Date input field -->
+            <div class="date-input-expire" id="dateInputExpire">
+                <label for="dateField">Expiration date</label>
+                <input type="datetime-local" id="dateFieldExpire" style="display: block" name="dateFieldExpire">
+                <div class="error-message-expire" id="errorMessageExpire" style="display: none;">Expiration date cannot be in the past or after 1 month from now</div>
+            </div>
+            <br><br>
+            <div class="permission" id="permissionInput">
+                <label for="permission">Permission</label>
+                <select name="permission" id="permissionInputValue">
+                    <option value=1 style="font-weight:bold">Previewer</option>
+                    <option value=2 style="font-weight:bold">PDF Viewer</option>
+                    <option value=3 style="font-weight:bold">Viewer</option>
+                </select>
+            </div>
+            <button type="submit" id="submitButton" disabled= "false">Upload</button>
+        </form>
+        <pre id="output"></pre>
+        <br><br>
+        <button id="logoutButton">Logout</button>
+    <script>
+        var submitButtoninitial = document.getElementById('submitButton');
+        document.getElementById('logoutButton').addEventListener('click', LogoutHandler);
+        submitButtoninitial.disabled = false;
+
+        async function LogoutHandler(){
+            localStorage.clear();
+        }
+
+        async function storeAttachment(file)
+        {
+            let attachments = JSON.parse(sessionStorage.getItem('attachments') || '[]');
+            attachments.push(file);
+            sessionStorage.setItem('atttachments',JSON.stringify(attachments));
+        }
+
+        async function uploadFileToRoom(roomId, file, accessToken) {
+            const url = globalConfig.backendBaseUrl + `/agora-api/api/v1/rooms/${roomId}/files`;
+
+            const formData = new FormData();
+            
+            const metadata = {
+                type: 5,
+                subtype: 2,
+                inheritSettings: true,
+                name: file.name
+            };
+
+            formData.append('Resource', JSON.stringify(metadata));
+            formData.append('file', file, file.name);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data;
+                } else {
+                    const errorData = await response.text();
+                    console.error('File upload error response:', errorData);
+                    throw new Error(`File upload failed: ${errorData}`);
+                }
+            } catch (error) {
+                console.error('An error occurred during file upload:', error);
+                throw error;
+            }
+        }
+
+        var nowx = new Date();
+        var nowValue = new Date().toISOString().slice(0, 16);
+        document.getElementById('dateFieldExpire').setAttribute('min', nowValue);
+        nowx.setDate(nowx.getDate()+1)
+        var now = new Date(nowx).toISOString().slice(0, 16);
+        
+        document.getElementById('dateFieldExpire').setAttribute('value', now);
+        validateDateTimeExpire();
+
+        function validateDateTimeExpire() {
+            var datetimeField = document.getElementById('dateFieldExpire');
+            var submitButton = document.getElementById('submitButton');
+            var errorMessage = document.getElementById('errorMessageExpire');
+            var selectedDateTime = new Date(datetimeField.value);
+            
+            var now = new Date();
+            var afterMonth = new Date(now);
+            afterMonth.setMonth(afterMonth.getMonth() + 1);
+
+            if (selectedDateTime <= now || selectedDateTime > afterMonth) {
+                errorMessage.style.display = 'block';
+                submitButton.disabled = true; // Disable the submit button
+            } else {
+                errorMessage.style.display = 'none';
+                submitButton.disabled = false; // Enable the submit button
+            }
+        }
+            
+        document.getElementById('dateFieldExpire').addEventListener('change', validateDateTimeExpire);
+
+        document.getElementById('auth-upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            try {
+                var expire = document.getElementById('dateInputExpire');
+                var expireVal = document.getElementById('dateFieldExpire');
+                var permission = document.getElementById('permissionInputValue');
+                var expireIn = "";
+
+                expireIn = expireVal.value;
+                const fileInput = document.getElementById('fileInput');
+                const output = document.getElementById('output');
+                const file = fileInput.files;
+           
+                for (let i = 0; i < file.length; i++) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const fileData = {
+                            name: file[i].name,
+                            type: file[i].type,
+                            size: file[i].size,
+                            expire: expireIn,
+                            permission: permission.value,
+                            data: event.target.result.split(',')[1]
+                        };
+                        Office.context.ui.messageParent(JSON.stringify(fileData));
+                    }
+                    reader.readAsDataURL(file[i]);
+                    output.textContent = `${file[i].name} is attached and ready to be uploaded`;
+                }
+            } catch (error) {
+                output.textContent = `Operation failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

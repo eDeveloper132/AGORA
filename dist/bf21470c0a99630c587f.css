@@ -1,0 +1,83 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    padding-top: 25px;
+    max-width: 90%;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-top: 10px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    font-size: 18px;
+}
+
+form {
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    -ms-flex-direction: column;
+    
+}
+.center {
+    display: block;
+    margin-top: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+  }
+label {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #555;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="file"],
+button {
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="file"]:focus {
+    border-color: #007BFF;
+    width: 90%;
+}
+
+button {
+    margin-top: 20px;
+    background-color: #D3212D;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    opacity: 1;
+}
+
+button:hover {
+    background-color: #CE2029;
+}
+
+pre {
+    background-color: transparent;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 20px;
+}

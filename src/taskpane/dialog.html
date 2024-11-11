@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGORA</title>
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript" src="../configurations/config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>File Upload to Room</h1>
+        <form id="auth-upload-form" enctype="multipart/form-data">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <label for="trustRoomName">Trust Room Name:</label>
+            <input type="text" id="trustRoomName" name="trustRoomName" required>
+            <label for="roomId">Room ID:</label>
+            <input type="text" id="roomId" name="roomId" required>
+            <label for="fileInput">Select File:</label>
+            <input type="file" id="fileInput" name="file" required>
+            <button type="submit">Authenticate and Uploads</button>
+            
+        </form>
+        <pre id="output"></pre>
+    </div>
+    <script>
+        async function authenticate(username, password, trustRoomName) {
+            const url = globalConfig.backendBaseUrl + '/agora-api/api/v1/auth';
+            const clientId = 'chc';
+            const clientSecret = 'secret';
+            const grantType = 'password';
+            const formData = new URLSearchParams();
+            formData.append('grant_type', grantType);
+            formData.append('client_id', clientId);
+            formData.append('client_secret', clientSecret);
+            formData.append('username', username);
+            formData.append('password', password);
+            formData.append('community', trustRoomName);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    body: formData.toString()
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.access_token;
+                } else {
+                    const errorData = await response.text();
+                    console.error('Authentication error response:', errorData);
+                    throw new Error(`Authentication failed: ${errorData}`);
+                }
+            } catch (error) {
+                console.error('An error occurred during authentication:', error);
+                throw error;
+            }
+        }
+
+        async function uploadFileToRoom(roomId, file, accessToken) {
+            const url = globalConfig.backendBaseUrl + `/agora-api/api/v1/rooms/${roomId}/files`;
+
+            const formData = new FormData();
+            
+            const metadata = {
+                type: 5,
+                subtype: 2,
+                inheritSettings: true,
+                name: file.name
+            };
+
+            formData.append('Resource', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            formData.append('file', file, file.name);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json, text/plain, */*'
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data;
+                } else {
+                    const errorData = await response.text();
+                    console.error('File upload error response:', errorData);
+                    throw new Error(`File upload failed: ${errorData}`);
+                }
+            } catch (error) {
+                console.error('An error occurred during file upload:', error);
+                throw error;
+            }
+        }
+        document.getElementById('auth-upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const trustRoomName = document.getElementById('trustRoomName').value;
+            const roomId = document.getElementById('roomId').value;
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            const output = document.getElementById('output');
+            output.textContent = 'Authenticating...';
+
+            try {
+                const accessToken = await authenticate(username, password, trustRoomName);
+                output.textContent = 'Authenticated successfully. Uploading file...';
+
+                const result = await uploadFileToRoom(roomId, file, accessToken);
+                output.textContent = `File uploaded successfully:\n${JSON.stringify(result, null, 2)}`;
+            } catch (error) {
+                output.textContent = `Operation failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGORA</title>
+    <link rel="stylesheet" href="bf21470c0a99630c587f.css">
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript" src="f2e59817a9a1ed953b80.js"></script>
+    <script type="text/javascript" src="f82fcd4059f230d4103d.js"></script>
+    <script type="text/javascript" src="633e53f45dba6a7efa3f.js"></script>
+<script defer src="polyfill.js"></script><script defer src="taskpane.js"></script></head>
+<body>
+    <img src="assets/agora-logo.png" alt="AGORA" class="center">
+    <div class="container">
+        <form id="auth-upload-form" enctype="multipart/form-data">
+            <input type="text" id="username" name="username" placeholder="Username" required>
+            <input type="password" id="password" name="password" placeholder="Password" required>
+            <input type="text" id="trustRoomName" name="trustRoomName" placeholder="Trust Room" required>
+            <button type="submit">Login</button>
+        </form>
+        <pre id="output"></pre>
+    </div>
+    <script>
+        document.getElementById('auth-upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            performAuthentication(event);
+        });
+    </script>
+</body>
+</html>
